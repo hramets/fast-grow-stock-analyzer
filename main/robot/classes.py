@@ -156,6 +156,3 @@ class DataFilter:
             ) if not postive_result else stocks_data
  
         return stocks_data
-
-
-    
