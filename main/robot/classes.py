@@ -157,33 +157,5 @@ class DataFilter:
  
         return stocks_data
 
-    
-class WikiTickersExtractor:
-    
-    """
-    REDUDANT
-    """
-    
-    def __init__(
-        self,
-        index_tickers_pages: dict[str, list[str, int]] # index: [wiki web page, table n]
-    ):
-        self.index_tickers_pages = index_tickers_pages
-        
-    def extract_table(
-        self,
-        index_name: str,
-        table_nr: int
-    ) -> DataFrame:
-        """
-        Method extracts index table from Wiki.
-        """
-        if index_name not in self.index_tickers_pages.keys:
-            raise KeyError(f"Index {index_name} is not valid.")
-        
-        data: DataFrame = pd.read_html(
-            self.index_tickers_pages[index_name][0]
-        )[
-            self.index_tickers_pages[index_name][1]
-        ]
+
     
