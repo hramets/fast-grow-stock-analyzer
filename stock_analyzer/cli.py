@@ -1,10 +1,6 @@
-from classes import(
-    DataFilter,
-    Yfinance,
-    MetricsCalculator
-)
-from functions import get_page_tables
-import config
+from stock_analyzer.analyzer import DataFilter, Yfinance, MetricsCalculator
+from stock_analyzer.scraper import get_page_tables
+from stock_analyzer import config
 import pandas as pd
 from pandas import DataFrame
 from datetime import datetime, timedelta
@@ -16,7 +12,7 @@ error_logger.setLevel(
     level=logging.WARNING
 )
 handler = logging.FileHandler(
-    filename="errors.logs",
+    filename="errors.log",
     mode="a"
 )
 formatter = logging.Formatter(
@@ -48,19 +44,14 @@ def main() -> None:
         right_date_format = True
     start_period_dt = datetime.strptime(start_period, "%Y-%m-%d")
     end_period_dt = datetime.strptime(end_period, "%Y-%m-%d")
-    
-    
+
+
 
     ### Getting an index's stocks data.
-    
-    # The robot maintains several indexes: S&P 500, NASDAQ 100, NASDAQ COMPOSITE.
-    
-    # {index: (wiki web page, table nr on the page)}
-    # On wiki an index's page has several tables.
-    # A position of the table with tickers list always differs.
+
     indexes_info = config.INDEXES_INFO
     indexes: list = list(indexes_info.keys())
-    
+
     ## User chooses index.
 
     index_nr_is_digit: bool = False
@@ -75,14 +66,14 @@ def main() -> None:
         index_nr_is_digit = True if (
             index_nr.isdigit() and int(index_nr) in range(len(indexes_info.keys()))
         ) else print("Invalid input.")
-    
+
     chosen_index: str = indexes[int(index_nr)]
     chosen_index_url: str = indexes_info[chosen_index]["url"]
     chosen_index_table_nr: int = indexes_info[chosen_index]["table_nr"]
     chosen_index_ticker_name: str = indexes_info[chosen_index]["ticker_name"]
-    
+
     ## Extracting the chosen index tickers from wiki.
-    
+
     try:
         wiki_page_tables = get_page_tables(url=chosen_index_url)
     except Exception as e:
@@ -92,7 +83,7 @@ def main() -> None:
         )
         print(error_msg + "See logs.")
         return
-    
+
     try:
         tickers_table = wiki_page_tables[chosen_index_table_nr]
     except Exception as e:
@@ -103,17 +94,17 @@ def main() -> None:
         )
         print(error_msg + "See logs.")
         return
-    
+
     tickers: list[str] = tickers_table[tickers_table.columns[0]] \
         .to_list()
-    tickers.append(chosen_index_ticker_name) # For rs calculating.
+    tickers.append(chosen_index_ticker_name)
 
     ### Extracting tickers' stock data and index_data.
-    
+
     yahoo_fin = Yfinance()
 
-    # For moving average date requires a longer period.
-    # Redudant 21 days data will be deleted.
+    # MA calculation requires 21 extra days of data before the start date.
+    # This tail is trimmed after the MA is computed.
     try:
         stocks_data_for_ma = yahoo_fin.get_price_data(
             tickers=tickers,
@@ -129,11 +120,11 @@ def main() -> None:
         )
         print(error_msg + "See logs.")
         return
-    
+
     ## Calculating metrics.
-    
+
     metrics = MetricsCalculator()
-    
+
     try:
         stocks_data_for_ma = metrics.rs_on_data(
             stocks_data=stocks_data_for_ma,
@@ -146,10 +137,10 @@ def main() -> None:
         )
         print(error_msg + "See logs.")
         return
-    
+
     ma_window = config.MA_WINDOW
-        
-    try: 
+
+    try:
         stocks_data_for_ma = metrics.rs_ma_on_data(
             stocks_data=stocks_data_for_ma,
             ma_window=ma_window
@@ -162,12 +153,10 @@ def main() -> None:
         print(error_msg + "See logs.")
         return
 
-    # Cutting the tail with 21 days for ma calculating.
-
     stocks_data = stocks_data_for_ma[stocks_data_for_ma.index >= start_period]
-    
-    ## Filterting stocks
-    
+
+    ## Filtering stocks
+
     stock_filter = DataFilter()
 
     try:
@@ -181,7 +170,7 @@ def main() -> None:
         )
         print(error_msg + "See logs.")
         return
-    
+
     max_days_rs_holds_above_ma = len(stocks_data)
     days_val_is_digit: bool = False
     while not days_val_is_digit:
@@ -192,7 +181,7 @@ def main() -> None:
         else:
             days_rs_holds_above_ma = int(days_rs_holds_above_ma)
             days_val_is_digit = True
-    
+
     try:
         full_filtered_stocks_data = stock_filter.has_rs_crossed_ma(
             stocks_data=rs_filtered_stocks_data,
@@ -205,7 +194,7 @@ def main() -> None:
         )
         print(error_msg + "See logs.")
         return
-    
+
     ## Result
     print(
         ", ".join(
@@ -215,6 +204,6 @@ def main() -> None:
         )
     )
 
+
 if __name__ == "__main__":
     main()
-    

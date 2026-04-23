@@ -13,5 +13,5 @@ def get_page_tables(url: str) -> list[DataFrame]:
     html = response.text
 
     tables = pd.read_html(StringIO(html))
-    
+
     return tables

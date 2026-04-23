@@ -1,3 +1,26 @@
 venv/
 helper/
 test.py
+
+# Logs
+errors.log
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.eggs/
+*.egg-info/
+dist/
+build/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.*

@@ -1,10 +1,10 @@
 import unittest
-from robot.classes import(
+from stock_analyzer.analyzer import (
     Yfinance,
     MetricsCalculator,
     DataFilter
 )
-from pandas import(
+from pandas import (
     DataFrame,
     Series
 )
@@ -15,7 +15,7 @@ from typing import Callable
 
 
 class TestYfinanceClass(unittest.TestCase):
-    
+
     def test_get_price_data(self):
         yfin = Yfinance()
 
@@ -23,12 +23,12 @@ class TestYfinanceClass(unittest.TestCase):
         start_date = "2024-01-02"
         end_date = "2024-02-01"
         period: tuple[str] = (start_date, end_date)
-        
+
         df: DataFrame = yfin.get_price_data(
             tickers=tickers,
             period=period
         )
-        
+
         self.assertIs(
             expr1=type(df),
             expr2=DataFrame,
@@ -44,10 +44,10 @@ class TestYfinanceClass(unittest.TestCase):
             second=set(df.columns.get_level_values(level=1)),
             msg="Stocks data is extracted incorrecly."
         )
-        
+
 
 class TestDataFilterClass(unittest.TestCase):
-    
+
     def setUp(self):
         columns: list[tuple] = [
             ("NVDA", "close_price"),
@@ -89,7 +89,7 @@ class TestDataFilterClass(unittest.TestCase):
         )
         calculate_rs: Callable[[float, float], float] = MetricsCalculator().rs
         calculate_rs_ma: Callable[[DataFrame], DataFrame] = MetricsCalculator().rs_ma_on_data
-        for ticker, _ in multi_cols: 
+        for ticker, _ in multi_cols:
             df[ticker, "rs"] = calculate_rs(
                 stock_price=df[ticker, "close_price"],
                 market_price=df[ticker, "market_price"]
@@ -99,39 +99,39 @@ class TestDataFilterClass(unittest.TestCase):
             ma_window=2
         )
         self.df = df
-    
+
     def test_has_rs_grown(self):
         filter_has_rs_grown: Callable[[DataFrame], DataFrame] = \
             DataFilter().has_rs_grown
         df: DataFrame = filter_has_rs_grown(stocks_data=self.df)
         filtered_tickers_must_be: list = ["TSLA"]
         filtered_tickers_are: list = list(df.columns.get_level_values(0).unique())
-        
+
         self.assertListEqual(
             list1=filtered_tickers_must_be,
             list2=filtered_tickers_are,
             msg=f"Tickers are filtered wrongly - {filtered_tickers_are}"
-        )        
-            
+        )
+
     def test_has_rs_crossed_ma(self):
         # According to the setUp dataframe, there must be left TSLA to the dataframe with a window of 1.
         # With the window of 2 there have to be no stocks.
         filter_has_rs_crossed_ma: Callable[[DataFrame, int], DataFrame] = \
             DataFilter().has_rs_crossed_ma
         df1: DataFrame = filter_has_rs_crossed_ma(
-            stocks_data = self.df,
+            stocks_data=self.df,
             days_rs_holds_above_ma=1
         )
         df2: DataFrame = filter_has_rs_crossed_ma(
-            stocks_data = self.df,
+            stocks_data=self.df,
             days_rs_holds_above_ma=2
         )
-        
+
         df1_tickers_left: list = list(df1.columns.get_level_values(0).unique())
         df1_tickers_must_have_left: list = ["TSLA"]
         df2_tickers_left: list = list(df2.columns.get_level_values(0).unique())
         df2_tickers_must_have_left: list = []
-        
+
         self.assertListEqual(
             list1=df1_tickers_left,
             list2=df1_tickers_must_have_left,
@@ -142,9 +142,9 @@ class TestDataFilterClass(unittest.TestCase):
             list2=df2_tickers_must_have_left,
             msg=f"Must have left nothing with window of 2. Left - {df2_tickers_left}"
         )
-    
+
 class TestMetricsClass(unittest.TestCase):
-    
+
     def setUp(self):
         df: DataFrame = DataFrame(
             data=[
@@ -175,7 +175,7 @@ class TestMetricsClass(unittest.TestCase):
                 [13.9, 12.7],
                 [17.2, 15.9]
             ],
-                        columns=["close_price", "market_price"]
+            columns=["close_price", "market_price"]
         )
         calculate_rs: Callable[[float, float], float] = MetricsCalculator().rs
         df["rs"] = calculate_rs(
@@ -183,11 +183,11 @@ class TestMetricsClass(unittest.TestCase):
             market_price=df["market_price"]
         )
         self.df = df
-    
+
     def test_rs_ma(self):
         calculate_rs_ma: Callable[[DataFrame], DataFrame] = MetricsCalculator().rs_ma_on_data
         df: DataFrame = calculate_rs_ma(stock_data=self.df, ma_window=2)
-        
+
         row_1_ma = df.loc[0, "rs_ma"]
         row_2_ma = df.loc[1, "rs_ma"]
         self.assertTrue(
@@ -199,10 +199,7 @@ class TestMetricsClass(unittest.TestCase):
             second=np.float64,
             msg=f"Type of the second row is not float, but {type(row_2_ma)}"
         )
-        
-        
-        
-        
-    
+
+
 if __name__ == "__main__":
     unittest.main()

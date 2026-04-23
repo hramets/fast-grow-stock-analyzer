@@ -8,7 +8,7 @@ class Yfinance:
     """
     Class implements yahoo finance manipulation.
     """
-    
+
     @staticmethod
     def get_price_data(
         tickers: str | list[str],
@@ -29,7 +29,7 @@ class MetricsCalculator:
     """
     Class calculates metrics for stocks data that involved in analysis.
     """
-    
+
     @staticmethod
     def rs(
         stock_price: float,
@@ -43,7 +43,7 @@ class MetricsCalculator:
             ndigits=2
         )
         return rs
-    
+
     def rs_on_data(
         self,
         stocks_data: DataFrame,
@@ -53,7 +53,7 @@ class MetricsCalculator:
         Method calculates a relative strength for a dataframe with stock prices.
         """
         results: dict[tuple[str, str], float] = {}
-        
+
         # Tickers are first lvl cols.
         tickers = stocks_data.columns.get_level_values(1).unique()
         for ticker in tickers:
@@ -61,12 +61,12 @@ class MetricsCalculator:
                 stock_price=stocks_data[("Close", ticker)],
                 market_price=stocks_data[("Close", market_ticker)]
             )
-        
+
         results_df: DataFrame = pd.DataFrame(results)
         stocks_data = pd.concat([stocks_data, results_df], axis=1)
-        
+
         return stocks_data
-    
+
     @staticmethod
     def rs_ma_on_data(
         stocks_data: DataFrame,
@@ -78,22 +78,22 @@ class MetricsCalculator:
         NB! Dataframe must contain a "rs" column
         """
         results: dict[tuple[str, str], float] = {}
-        
+
         # Tickers are second lvl cols.
         tickers = stocks_data.columns.get_level_values(1).unique()
         for ticker in tickers:
             results[("rs_ma", ticker)] = stocks_data[("rs", ticker)].rolling(window=ma_window).mean()
-        
+
         results_df: DataFrame = pd.DataFrame(results)
         stocks_data = pd.concat([stocks_data, results_df], axis=1)
-        
+
         return stocks_data
-        
+
 
 
 class DataFilter:
     """
-    Class contains filters for stocks price data. 
+    Class contains filters for stocks price data.
     """
 
     @staticmethod
@@ -113,7 +113,7 @@ class DataFilter:
                 columns=[ticker],
                 level=1
             ) if not rs_period_end > rs_period_start else stocks_data
-        
+
         return stocks_data
 
     @staticmethod
@@ -128,25 +128,25 @@ class DataFilter:
         """
         # The main idea of the algorithm is it starts from the end checking if rs is higher than ma.
         # If a rs has been held above ma a defined amount of days a stock remains to a dataframe.
-        
+
         stocks_tickers: list[str] = list(stocks_data.columns.get_level_values(1).unique())
-        
+
         for ticker in stocks_tickers:
             row_nr: int = len(stocks_data) - 1
             count_days: int = 0
-            
+
             postive_result: bool = False
             while row_nr != -1:
                 rs: float = stocks_data.iloc[row_nr][("rs", ticker)]
                 ma: float = stocks_data.iloc[row_nr][("rs_ma", ticker)]
-                
+
                 if rs < ma or pd.isna(ma):
                     break
                 elif rs > ma:
                     count_days += 1
 
                 row_nr -= 1
-            
+
             if count_days >= days_rs_holds_above_ma:
                 postive_result = True
 
@@ -154,5 +154,5 @@ class DataFilter:
                 columns=[ticker],
                 level=1
             ) if not postive_result else stocks_data
- 
+
         return stocks_data
